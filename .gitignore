@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+bun.lock
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OmOC runtime state (repo-adjacent)
+.omoc/state/
+.omoc/sessions/
+.omoc/worktrees/
+.omoc/*.log
+
+# Keep these in repo (config and plans):
+# .omoc/config.json
+# .omoc/plans/
+
+# Test directories created during test runs
+.omoc-test*
+.omoc-test-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://clawflint.com/schemas/omoc-v1.json",
+  "project": {
+    "name": "My Project",
+    "repo": "github.com/user/repo"
+  },
+  "modelTiers": {},
+  "agents": {},
+  "categories": {},
+  "workflows": {
+    "defaultApprovalGate": "required",
+    "loopMaxIterations": 100,
+    "parallelMaxWorkers": 5
+  },
+  "concurrency": {
+    "maxParallelWorkers": 5,
+    "maxBackgroundTasks": 10,
+    "perProviderLimit": 3,
+    "perModelLimit": 2,
+    "staleTaskTimeoutSeconds": 300
+  },
+  "costControls": {
+    "sessionBudgetUsd": 10,
+    "taskBudgetUsd": 3,
+    "alertThresholdPercent": 75,
+    "hardStopOnBudget": true
+  },
+  "eventRouting": {
+    "channels": {
+      "agent-status": "discord:CHANNEL_ID",
+      "build-log": "discord:CHANNEL_ID",
+      "alerts": "discord:CHANNEL_ID"
+    },
+    "mentionPolicy": {
+      "alerts": "@USER_ID",
+      "plan.ready": "@USER_ID",
+      "cost.alert": "@USER_ID"
+    }
+  }
+}

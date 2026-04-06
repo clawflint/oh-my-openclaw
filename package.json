@@ -1,0 +1,41 @@
+{
+  "name": "@clawflint/oh-my-openclaw",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestration for OpenClaw by ClawFlint",
+  "author": "ClawFlint (clawflint.com)",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run dist/index.js",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "setup": "bun run src/cli/setup.ts",
+    "doctor": "bun run src/cli/doctor.ts"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.0",
+    "typescript": "^5.4.5",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.6.0",
+    "@typescript-eslint/parser": "^7.6.0",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}

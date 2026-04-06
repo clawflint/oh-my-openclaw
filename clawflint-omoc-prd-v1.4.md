@@ -1,14 +1,15 @@
-# oh-my-openclaw (OmOC) — Product Requirements Document v1.3.1
+# oh-my-openclaw (OmOC) — Product Requirements Document v1.4
 
 > ClawFlint's Autonomous Agent Orchestration Plugin
-> Document: clawflint-omoc-prd-v1.3.1.md
+> Document: clawflint-omoc-prd-v1.4.md
 > Author: Mohamed Saleh / moelabs
 > Date: April 6, 2026
 > Status: Draft — Implementation-Ready
 > Changelog:
+> - v1.4: Adds Testing Strategy (§20) — five-tier test pyramid, simulation tests with recorded LLM responses, resilience/chaos tests, CI pipeline, test count targets per phase. Source-informed practices from OpenClaw (temp HOME isolation, contract tests, V8 coverage thresholds, per-provider flags, boot smoke tests), OmO (co-located tests, mock isolation, state inspection helpers), and OmX (version sync, install smoke).
 > - v1.3.1: Adds merge conflict escalation matrix (§7.4.1), event summary mode for notification batching.
-> - v1.3: Adds Security Architecture, three-tier state location model (repo/machine/control-plane), mailbox atomicity guarantees, atomic operation definitions for pause/cancel, AGENTS overlay precedence rules, Foreman permission rationale, write guards promoted to v1.x, north-star metric, Phase 3 timeline risk note.
-> - v1.2: State & Persistence Model, Lifecycle Management, Concurrency & Cost Controls, Operator Tooling, Lead/Foreman split, AGENTS overlay system, three-layer permission enforcement, worker supervision, reliability stance, corrected originality language.
+> - v1.3: Adds Security Architecture, three-tier state location model, mailbox atomicity, atomic operation definitions, AGENTS overlay precedence, Foreman permission rationale, write guards promoted to v1.x, north-star metric.
+> - v1.2: State & Persistence Model, Lifecycle Management, Concurrency & Cost Controls, Operator Tooling, Lead/Foreman split, AGENTS overlay system, three-layer permission enforcement, worker supervision, reliability stance.
 
 ---
 
@@ -1119,7 +1120,7 @@ OmOC targets a **managed-product reliability level** that sits between the light
 - [ ] AGENTS.md scaffolding via `/omoc setup`
 - [ ] `/omoc doctor` basic diagnostics
 - [ ] Event emission to clawhip
-- [ ] 60+ unit tests
+- [ ] Testing: 80 unit + 20 integration + 5 simulation + 3 live (see §20.8)
 
 **Deliverable**: `/loop fix the tests` works end-to-end with durable state, cancel, resume, and Discord notifications.
 
@@ -1130,7 +1131,7 @@ OmOC targets a **managed-product reliability level** that sits between the light
 - [ ] Approval gate system
 - [ ] Plan persistence in `.omoc/plans/`
 - [ ] AGENTS.md overlay injection hook
-- [ ] 30+ additional tests
+- [ ] Testing: cumulative 120 unit + 40 integration + 10 simulation + 5 live (see §20.8)
 
 ### Phase 3 — Parallel Execution (Weeks 6–9)
 
@@ -1148,7 +1149,8 @@ OmOC targets a **managed-product reliability level** that sits between the light
 - [ ] Cost tracking and budget enforcement
 - [ ] `/pause`, `/resume`, `/cleanup` commands
 - [ ] Monitor snapshots for `/status`
-- [ ] 60+ additional tests
+- [ ] Testing: cumulative 180 unit + 70 integration + 15 simulation + 10 live + 3 E2E (see §20.8)
+- [ ] All 9 resilience test scenarios passing (see §20.7)
 
 ### Phase 4 — Support Agents & Polish (Weeks 9–10)
 
@@ -1161,7 +1163,7 @@ OmOC targets a **managed-product reliability level** that sits between the light
 - [ ] `/omoc health`, `/omoc config`
 - [ ] Three-layer permission enforcement (prompt + plugin + host)
 - [ ] Documentation
-- [ ] 40+ additional tests
+- [ ] Testing: cumulative 220 unit + 90 integration + 20 simulation + 15 live + 7 E2E (see §20.8)
 
 ### Phase 5 — Dashboard Integration (Weeks 11–14)
 
@@ -1170,11 +1172,320 @@ OmOC targets a **managed-product reliability level** that sits between the light
 - [ ] Cost Dashboard
 - [ ] Fly.io Machine provisioning (Dedicated tier)
 - [ ] BYOM installation flow
-- [ ] End-to-end testing
+- [ ] Testing: cumulative 250 unit + 100 integration + 20 simulation + 15 live + 10 E2E (see §20.8)
 
 ---
 
-## 20. Success Metrics
+## 20. Testing Strategy
+
+### 20.1 — Testing Layers
+
+OmOC spans LLM API calls, file system state, git operations, messaging channels, and inter-agent communication. Each layer requires a different testing approach. The testing strategy is organized into five tiers of increasing realism and cost.
+
+| Tier | What It Tests | LLM Calls | Git Ops | Channels | Speed | Cost |
+|------|--------------|-----------|---------|----------|-------|------|
+| **Unit** | Individual functions, schema validation, config merging | Mocked | Mocked | None | Fast (seconds) | Free |
+| **Integration** | Tool pipelines, hook chains, state transitions | Mocked | Real (temp repos) | Mocked | Medium (seconds) | Free |
+| **Simulation** | Full workflows with deterministic LLM responses | Recorded/replayed | Real (temp repos) | Mocked | Medium (minutes) | Free |
+| **Live** | Full workflows with real LLM providers | Real API calls | Real (temp repos) | Mocked | Slow (minutes) | Tokens |
+| **End-to-End** | Complete user journeys from Discord to merged PR | Real API calls | Real (test repos) | Real (test channels) | Slow (minutes) | Tokens + infra |
+
+### 20.2 — Tier 1: Unit Tests
+
+Pure function tests with no external dependencies. All LLM responses, file system operations, and git commands are mocked.
+
+**What to test:**
+- Config loading, merging, Zod schema validation
+- Category → model tier resolution logic
+- Fallback chain walking
+- Task status lifecycle state machine (valid transitions only)
+- Intent classification keyword matching
+- Tool permission matrix enforcement (given agent X calling tool Y, allow or deny?)
+- Cost budget arithmetic (accumulation, threshold checks, hard stop logic)
+- Mailbox JSONL line parsing and corruption handling
+- AGENTS.md overlay merge logic and precedence rules
+- Heartbeat staleness detection
+- Event suppression and summary mode batching logic
+- Secret pattern detection and redaction
+
+**Target:** 200+ unit tests by Phase 2. Run on every commit.
+
+**Framework:** Vitest with in-memory fixtures. No file system, no network, no git.
+
+### 20.3 — Tier 2: Integration Tests
+
+Tests that exercise real file system and real git operations against temporary repositories, but mock all LLM calls.
+
+**What to test:**
+- `.omoc/` directory scaffolding via `/omoc setup`
+- Task record creation, update, and lifecycle transitions on disk
+- Worker state file writes and heartbeat updates
+- Mailbox append atomicity (concurrent writes from multiple workers)
+- Git worktree creation, isolation, and cleanup
+- Git branch creation, commit, merge (non-conflicting)
+- Git merge conflict detection and abort
+- Checkpoint save/load/restore
+- Session state persistence across simulated crash (kill process, restart, verify state)
+- Resume logic: load session → inventory tasks → recover in-progress → re-assign
+- Cancel protocol: signal → drain → revert → cleanup → verify clean state
+- `/omoc doctor` diagnostic checks against known-good and known-bad states
+- AGENTS.md file discovery across directory hierarchy
+
+**Environment setup:**
+```bash
+# Each integration test gets a fresh temporary repo
+const tmpDir = await mkdtemp('/tmp/omoc-test-');
+await exec('git init', { cwd: tmpDir });
+await writeFile(join(tmpDir, 'AGENTS.md'), scaffoldTemplate);
+// Test runs here
+// Cleanup: rm -rf tmpDir
+```
+
+**Target:** 100+ integration tests by Phase 3. Run on every PR.
+
+### 20.4 — Tier 3: Simulation Tests (Recorded LLM Responses)
+
+Full workflow tests using recorded/replayed LLM responses. This tests the orchestration logic end-to-end without spending tokens.
+
+**How it works:**
+1. Run a real session once with `OMOC_RECORD_MODE=true`
+2. All LLM API calls and responses are captured to `.omoc/recordings/<session-id>.jsonl`
+3. Subsequent test runs replay the recorded responses deterministically
+4. Assertions check: correct agent invocations, correct tool calls, correct state transitions, correct event emissions
+
+**What to test:**
+- `/loop` full lifecycle: start → iterate → verify → complete
+- `/plan` full lifecycle: intent → Planner → Auditor → Critic → approval
+- `/run` full pipeline: plan → approve → Foreman decompose → Builder execute → Reviewer verify → complete
+- `/parallel` with 2 workers: decompose → parallel execution → merge → verify
+- `/cancel` mid-execution: verify clean shutdown and state consistency
+- `/resume` after simulated crash: verify pickup from correct task
+- Cost budget exceeded mid-session: verify hard stop and notification
+- Model fallback: primary model returns 429 → fallback model used → task completes
+- Context window compaction: session exceeds 80% → compaction fires → critical context preserved
+
+**Recording management:**
+- Recordings are committed to the test suite (they're deterministic fixtures)
+- When agent prompts change significantly, recordings need re-capture
+- A CI job flags stale recordings (prompt hash mismatch) as warnings
+
+**Target:** 20+ simulation tests covering all five workflow commands. Run on every PR.
+
+### 20.5 — Tier 4: Live Tests (Real LLM Calls)
+
+Tests against real LLM providers using real API keys. These are expensive and slow, so they run on a schedule (nightly) or manually before releases.
+
+**Environment variables:**
+```bash
+OMOC_LIVE_TEST=1
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+OMOC_LIVE_TEST_BUDGET=2.00  # Hard cap: $2 per test run
+```
+
+**What to test:**
+- `/loop "create a file called hello.txt with the text hello world"` → verify file exists with correct content
+- `/loop "fix the intentional bug in src/math.ts"` (test repo with planted bug) → verify bug fixed, tests pass
+- `/plan "add user authentication"` → verify plan is produced, is coherent, contains phases
+- Category routing: `quick` task actually uses Tier 3 model, `deep` task uses Tier 1 model
+- Fallback chain: artificially invalid API key for primary → verify fallback model activates
+- Intent classification: 10 sample prompts → verify correct intent categorization
+
+**Budget protection:**
+- Each live test has a per-test token budget (default: $0.50)
+- Test runner aborts if cumulative spend exceeds `OMOC_LIVE_TEST_BUDGET`
+- Results include cost-per-test reporting for monitoring spend drift
+
+**Target:** 15+ live tests. Run nightly and before releases. Skip in normal CI.
+
+### 20.6 — Tier 5: End-to-End Tests (Full Channel Integration)
+
+Complete user journeys from a real messaging channel through to a real git repository. These validate that the entire stack works — OpenClaw gateway, OmOC plugin, agents, git operations, event routing, and channel delivery.
+
+**Infrastructure:**
+- Dedicated test Discord server with bot and channels
+- Test GitHub repository (private, ClawFlint-owned)
+- clawhip instance pointed at test Discord channels
+- OpenClaw gateway with OmOC plugin loaded
+
+**Test scenarios:**
+
+| Scenario | Steps | Assertions |
+|----------|-------|------------|
+| **Happy path: /loop** | Send `/loop create hello.txt` in Discord → wait for completion notification | File exists in repo, `#agent-status` shows completion, `#build-log` shows commit |
+| **Happy path: /plan + /build** | Send `/plan add a README` → wait for plan → send `/build` → wait for completion | README.md exists, plan archived in `.omoc/plans/` |
+| **Cancel mid-execution** | Send `/loop long running task` → wait 30s → send `/cancel` | Session state is `cancelled`, no orphan worktrees, `#alerts` shows cancel confirmation |
+| **Resume after crash** | Start `/loop`, kill gateway process mid-task, restart gateway, send `/resume` | Task resumes from checkpoint, completes successfully |
+| **Parallel merge conflict** | `/parallel 2 edit the same file differently` | Conflict detected, `#alerts` shows diff, session paused awaiting `/resolve` |
+| **Budget exceeded** | Set `session_budget_usd: 0.50`, run expensive task | Session halts, `#alerts` shows budget exceeded, cost dashboard reflects spend |
+| **Doctor on fresh install** | Send `/omoc doctor` | All checks pass, response in channel lists results |
+
+**Execution:** Manual before major releases. Automated version runs weekly on a schedule using a Discord bot that sends commands and verifies responses programmatically.
+
+**Target:** 10+ E2E scenarios. Run weekly and before releases.
+
+### 20.7 — Resilience Tests
+
+Targeted chaos tests that verify recovery from failure conditions. These run as part of integration and simulation tiers.
+
+| Failure Scenario | How Simulated | Expected Recovery |
+|-----------------|---------------|-------------------|
+| Worker killed mid-commit | `process.kill(worker.pid)` during file write | Task marked `interrupted`, worktree preserved, task re-queued on resume |
+| API rate limit (429) | Mock 429 response from primary model | Fallback model activated, task continues, event `model.fallback` emitted |
+| Mailbox corruption | Append partial JSON line to inbox.jsonl | Doctor detects corruption, moves to `.corrupted`, session continues from last valid line |
+| Task JSON corruption | Write invalid JSON to a task record | Session start skips corrupted task with warning, doctor reports it |
+| Git worktree left behind | Create orphan worktree with no task record | `/cleanup` detects and prunes, doctor reports it |
+| Gateway crash during merge | Kill process during `git merge` | Merge is aborted (incomplete merges detected on startup), task marked `conflict` |
+| Disk full during state write | Mock `ENOSPC` on file write | Atomic write pattern prevents partial writes, error surfaced to user |
+| Heartbeat timeout | Freeze worker process for >5 min (no heartbeat) | Stale-task reaper marks worker stale, re-assigns task |
+| All fallback models unavailable | Mock failures for entire fallback chain | Task queued with `model_unavailable` status, user notified, session paused |
+
+**Target:** All 9 resilience scenarios covered by Phase 4.
+
+### 20.8 — Test Infrastructure
+
+**Test repo template:**
+A minimal repository with intentional characteristics for testing:
+```
+omoc-test-repo/
+├── AGENTS.md             # Pre-configured for tests
+├── src/
+│   ├── math.ts           # Contains planted bug for /loop fix tests
+│   ├── auth/
+│   │   ├── AGENTS.md     # Subdirectory overlay for precedence tests
+│   │   └── handler.ts
+│   └── index.ts
+├── tests/
+│   └── math.test.ts      # Verifies planted bug is fixed
+├── package.json
+├── tsconfig.json
+└── .gitignore            # Includes .omoc/
+```
+
+**CI pipeline:**
+```
+On every commit:
+  → Tier 1 (unit tests)        ~10 seconds
+
+On every PR:
+  → Tier 1 (unit tests)        ~10 seconds
+  → Tier 2 (integration tests) ~60 seconds
+  → Tier 3 (simulation tests)  ~3 minutes
+
+Nightly:
+  → Tier 4 (live tests)        ~10 minutes, $2 budget cap
+
+Weekly + pre-release:
+  → Tier 5 (E2E tests)         ~30 minutes, manual trigger
+```
+
+**Test count targets by phase:**
+
+| Phase | Unit | Integration | Simulation | Live | E2E | Total |
+|-------|------|-------------|-----------|------|-----|-------|
+| Phase 1 | 80 | 20 | 5 | 3 | 0 | 108 |
+| Phase 2 | 120 | 40 | 10 | 5 | 0 | 175 |
+| Phase 3 | 180 | 70 | 15 | 10 | 3 | 278 |
+| Phase 4 | 220 | 90 | 20 | 15 | 7 | 352 |
+| Phase 5 | 250 | 100 | 20 | 15 | 10 | 395 |
+
+### 20.9 — Practices Adopted from Source Ecosystems
+
+The following practices are informed by how OpenClaw (247K stars), oh-my-openagent, and oh-my-codex handle testing at scale:
+
+**Temporary HOME isolation (from OpenClaw):**
+Every non-live test creates a temporary HOME directory. Tests never read or write to the real `~/.omoc/` or `~/.openclaw/`. This prevents test pollution and makes CI deterministic.
+```typescript
+// test/test-env.ts
+beforeEach(async () => {
+  const tmpHome = await mkdtemp(join(tmpdir(), 'omoc-test-'));
+  process.env.HOME = tmpHome;
+  process.env.OMOC_HOME = join(tmpHome, '.omoc');
+});
+afterEach(async () => {
+  await rm(tmpHome, { recursive: true });
+});
+```
+
+**Co-located test files (from OmO):**
+Tests live next to their implementation. `src/tools/delegate/delegate.ts` has `src/tools/delegate/delegate.test.ts`. This keeps the relationship visible and makes it natural to update tests alongside code.
+
+**Module isolation for mock-heavy tests (from OmO):**
+Bun's `mock.module()` can pollute the module cache and affect subsequent tests. Tests that heavily mock dependencies (state manager, background manager, event router) run in separate processes in CI:
+```yaml
+# CI strategy: isolated groups prevent cross-contamination
+- bun test src/state/        # isolated
+- bun test src/workers/      # isolated
+- bun test --exclude src/state --exclude src/workers  # batched
+```
+
+**Contract tests (from OpenClaw):**
+A dedicated test suite verifies that the OmOC plugin conforms to the OpenClaw Plugin SDK interface contract. These tests iterate over all registered hooks, tools, and commands and assert they match the expected shape. Run on every PR — catches interface drift early.
+```typescript
+test('all registered hooks have valid event names', () => {
+  const plugin = loadOmOCPlugin();
+  for (const hook of plugin.hooks) {
+    expect(VALID_HOOK_EVENTS).toContain(hook.event);
+    expect(typeof hook.handler).toBe('function');
+  }
+});
+```
+
+**Coverage thresholds (from OpenClaw):**
+V8 coverage enforced via Vitest config with a **70% minimum** for lines, branches, functions, and statements. Only exercised files count — no ever-growing exclude list:
+```typescript
+// vitest.config.ts
+coverage: {
+  provider: 'v8',
+  thresholds: { lines: 70, branches: 70, functions: 70, statements: 70 },
+  all: false  // only count files that are actually imported by tests
+}
+```
+
+**Per-provider live test flags (from OpenClaw):**
+Live tests are granular. Each provider can be tested independently:
+```bash
+OMOC_LIVE_TEST=1 bun test:live                           # all providers
+OMOC_LIVE_ANTHROPIC=1 bun test:live                      # Anthropic only
+OMOC_LIVE_OPENAI=1 bun test:live                         # OpenAI only
+OMOC_LIVE_TEST_BUDGET=2.00 bun test:live                 # hard cap
+OMOC_LIVE_MODELS="anthropic/claude-sonnet-4-6" bun test:live  # specific model
+```
+
+**Boot/install smoke tests (from OmX):**
+Before every release, a smoke test verifies the plugin can be installed from a packed tarball, loaded by OpenClaw, and respond to `/omoc health` without errors. This catches packaging issues that unit tests miss:
+```bash
+npm pack                                            # create tarball
+openclaw plugins install ./clawflint-oh-my-openclaw-1.0.0.tgz
+openclaw gateway &                                  # start gateway
+sleep 5
+openclaw agent --message "/omoc health" --timeout 30  # verify response
+```
+
+**State inspection helpers (from OmO):**
+Complex managers expose internal state for testing via helper functions. These are test-only exports, not public API:
+```typescript
+// Only exported in test builds
+export function _testGetTaskMap(foreman: Foreman): Map<string, Task> { ... }
+export function _testGetWorkerStates(foreman: Foreman): WorkerState[] { ... }
+export function _testGetMailboxSize(foreman: Foreman): number { ... }
+```
+
+**Gateway/port isolation (from OpenClaw):**
+Integration tests that start a gateway or daemon allocate unique ports to avoid collisions. Gateway tests run serially by default:
+```typescript
+const port = 25294 + parseInt(process.env.VITEST_WORKER_ID || '0');
+```
+
+**Version sync verification (from OmX):**
+A pre-publish script verifies that `package.json` version, git tag, changelog entry, and plugin manifest version all match:
+```bash
+node scripts/check-version-sync.mjs --tag v1.0.0
+```
+
+---
+
+## 21. Success Metrics
 
 ### North-Star Metric
 
@@ -1197,7 +1508,7 @@ This is the single metric that captures whether OmOC is delivering autonomous va
 
 ---
 
-## 21. Risks and Mitigations
+## 22. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
@@ -1211,7 +1522,7 @@ This is the single metric that captures whether OmOC is delivering autonomous va
 
 ---
 
-## 22. Open Questions
+## 23. Open Questions
 
 1. **Pricing**: $99/mo Dedicated includes OmOC — correct given token costs users also pay?
 2. **Event router**: Ship lightweight built-in router, or require clawhip?
@@ -1247,4 +1558,4 @@ No restrictively licensed source code was studied or reproduced.
 
 ---
 
-*Document version: 1.3.1 | Last updated: April 6, 2026*
+*Document version: 1.4 | Last updated: April 6, 2026*

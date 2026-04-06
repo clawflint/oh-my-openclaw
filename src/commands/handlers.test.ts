@@ -10,6 +10,7 @@ import {
   ResumeCommand,
   CleanupCommand,
   OmocSetupCommand,
+  OmocCommand,
   OmocDoctorCommand,
   OmocStatusCommand,
   RunCommand,
@@ -192,6 +193,17 @@ describe('Commands', () => {
       
       expect(result.success).toBe(true);
       expect(result.message).toContain('initialized');
+    });
+  });
+
+  describe('/omoc command', () => {
+    test('should show command help', async () => {
+      const cmd = new OmocCommand();
+
+      const result = await cmd.execute(context, stateManager);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('OmOC Commands');
     });
   });
 

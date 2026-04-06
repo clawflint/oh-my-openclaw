@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { AGENT_REGISTRY, getAgentConfig, listAgents, canUseTool } from './registry.js';
-import type { AgentRole } from '../types/index.js';
+import { getAgentConfig, listAgents, canUseTool } from './registry.js';
 
 describe('Agent Registry', () => {
   test('should have all 11 agents registered', () => {

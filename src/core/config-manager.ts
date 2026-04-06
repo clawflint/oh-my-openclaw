@@ -109,6 +109,14 @@ export class ConfigManager {
   }
 
   private detectMode(): OmocMode {
+    const explicitMode = process.env.OMOC_MODE?.toLowerCase();
+    if (explicitMode === "standalone") {
+      return "standalone";
+    }
+    if (explicitMode === "clawflint" || explicitMode === "openclaw") {
+      return "clawflint";
+    }
+
     if (process.env.CLAWFLINT_WORKER_ID || process.env.CLAWFLINT_KEY_ID) {
       return "clawflint";
     }

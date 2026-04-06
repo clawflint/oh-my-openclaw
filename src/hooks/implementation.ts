@@ -107,7 +107,7 @@ export class ContextWindowMonitorHook extends Hook {
     return { allowed: true };
   }
 
-  private estimateContextUsage(context: HookContext): number {
+  private estimateContextUsage(_context: HookContext): number {
     return 0.5;
   }
 }
@@ -189,7 +189,7 @@ export class CompactionPreserverHook extends Hook {
 
     for (const key of this.preserveKeys) {
       if (context.session && key in context.session) {
-        preserved[key] = (context.session as Record<string, unknown>)[key];
+        preserved[key] = ((context.session as unknown) as Record<string, unknown>)[key];
       }
     }
 

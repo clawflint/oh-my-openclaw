@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 export interface MailboxMessage {
   id: string;
@@ -12,10 +12,8 @@ export interface MailboxMessage {
 
 export class Mailbox {
   private basePath: string;
-  private sessionId: string;
 
   constructor(sessionId: string, basePath: string = '.omoc/state/sessions') {
-    this.sessionId = sessionId;
     this.basePath = join(basePath, sessionId, 'mailbox');
     this.ensureDirectory();
   }
@@ -28,10 +26,6 @@ export class Mailbox {
 
   private getInboxPath(workerId: string): string {
     return join(this.basePath, `${workerId}-inbox.jsonl`);
-  }
-
-  private getOutboxPath(workerId: string): string {
-    return join(this.basePath, `${workerId}-outbox.jsonl`);
   }
 
   async send(to: string, message: Omit<MailboxMessage, 'id' | 'timestamp'>): Promise<void> {

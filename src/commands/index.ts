@@ -7,6 +7,7 @@ export {
   ResumeCommand,
   CleanupCommand,
   OmocSetupCommand,
+  OmocCommand,
   OmocDoctorCommand,
   OmocStatusCommand,
   RunCommand,

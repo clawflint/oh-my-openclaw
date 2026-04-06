@@ -54,12 +54,22 @@ export class SessionMonitor {
       0,
     );
 
+    const failedSessions = sessions.filter((session) => {
+      if (session.status === "cancelled") {
+        return false;
+      }
+      const sessionTasks = this.stateManager.listTasks(session.id);
+      return sessionTasks.some((task) =>
+        task.status === "failed" || task.status === "rejected"
+      );
+    }).length;
+
     return {
       totalSessions: sessions.length,
       activeSessions: sessions.filter((s) => s.status === "active").length,
       completedSessions: sessions.filter((s) => s.status === "completed")
         .length,
-      failedSessions: sessions.filter((s) => s.status === "cancelled").length,
+      failedSessions,
       totalCost,
       averageCostPerSession:
         sessions.length > 0 ? totalCost / sessions.length : 0,
@@ -83,6 +93,11 @@ export class SessionMonitor {
 
     const currentTask = tasks.find((t) => t.status === "in_progress");
 
+    const sessionBudget = session.budget.sessionBudgetUsd;
+    const percentUsed = sessionBudget > 0
+      ? (session.tokenUsage.costUsd / sessionBudget) * 100
+      : 0;
+
     return {
       id: session.id,
       status: session.status,
@@ -100,9 +115,8 @@ export class SessionMonitor {
       },
       cost: {
         spent: session.tokenUsage.costUsd,
-        budget: session.budget.sessionBudgetUsd,
-        percentUsed:
-          (session.tokenUsage.costUsd / session.budget.sessionBudgetUsd) * 100,
+        budget: sessionBudget,
+        percentUsed,
       },
       workers: workers.map((w) => ({
         workerId: w.workerId,

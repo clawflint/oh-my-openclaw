@@ -7,13 +7,16 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "oh-my-openclaw": "dist/cli.js"
+  },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build": "bun build ./src/index.ts ./src/cli.ts --outdir ./dist --target node",
     "dev": "bun run --watch src/index.ts",
     "start": "bun run dist/index.js",
     "test": "bun test",

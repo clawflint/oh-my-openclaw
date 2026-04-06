@@ -2,9 +2,7 @@ import type {
   WorkCategory, 
   ModelTier, 
   AgentRole, 
-  AgentConfig,
-  Task,
-  Session 
+  AgentConfig
 } from '../types/index.js';
 import { AGENT_REGISTRY } from '../agents/registry.js';
 import { DEFAULT_MODEL_TIERS, DEFAULT_CATEGORIES } from '../config/index.js';
@@ -46,8 +44,6 @@ export function delegateByCategory(
 }
 
 function canHandleCategory(agent: AgentRole, category: WorkCategory): boolean {
-  const agentConfig = AGENT_REGISTRY[agent];
-  
   const categoryAgentMap: Record<WorkCategory, AgentRole[]> = {
     quick: ['builder', 'scout'],
     standard: ['builder', 'architect'],
@@ -81,7 +77,7 @@ export function createDelegationTool() {
   return {
     name: 'delegate',
     description: 'Category-based task delegation with model routing',
-    execute: (category: WorkCategory, taskDescription: string, preferAgent?: AgentRole): DelegationResult => {
+    execute: (category: WorkCategory, _taskDescription: string, preferAgent?: AgentRole): DelegationResult => {
       return delegateByCategory(category, preferAgent);
     }
   };
@@ -91,7 +87,7 @@ export function createSummonTool() {
   return {
     name: 'summon',
     description: 'Direct agent invocation by name',
-    execute: (agent: AgentRole, taskDescription: string): DelegationResult => {
+    execute: (agent: AgentRole, _taskDescription: string): DelegationResult => {
       const config = AGENT_REGISTRY[agent];
       const { model } = resolveCategoryToModel(config.defaultTier === 'tier_1' ? 'deep' : 'standard');
       
@@ -100,11 +96,19 @@ export function createSummonTool() {
   };
 }
 
+type CheckpointAction = 'save' | 'load' | 'list';
+
+type CheckpointResult =
+  | { saved: true; checkpointId: string }
+  | { loaded: true; checkpointId?: string }
+  | { checkpoints: string[] }
+  | { error: string };
+
 export function createCheckpointTool() {
   return {
     name: 'checkpoint',
     description: 'Save/load/list execution checkpoints',
-    execute: (action: 'save' | 'load' | 'list', checkpointId?: string): unknown => {
+    execute: (action: CheckpointAction, checkpointId?: string): CheckpointResult => {
       switch (action) {
         case 'save':
           return { saved: true, checkpointId: `cp-${Date.now()}` };

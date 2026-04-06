@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { FileStateManager } from '../state/file-state-manager.js';
+import { fileURLToPath } from 'url';
 
 interface DiagnosticCheck {
   name: string;
@@ -7,7 +8,7 @@ interface DiagnosticCheck {
   message?: string;
 }
 
-function runDiagnostics(): DiagnosticCheck[] {
+export function runDiagnostics(): DiagnosticCheck[] {
   const checks: DiagnosticCheck[] = [];
 
   checks.push({
@@ -17,7 +18,7 @@ function runDiagnostics(): DiagnosticCheck[] {
   });
 
   try {
-    const stateManager = new FileStateManager('.omoc');
+    new FileStateManager('.omoc');
     checks.push({
       name: 'State directory',
       status: 'pass',
@@ -87,16 +88,23 @@ function runDiagnostics(): DiagnosticCheck[] {
   return checks;
 }
 
-const checks = runDiagnostics();
+export function runDoctorCli(): number {
+  const checks = runDiagnostics();
 
-console.log('OmOC Diagnostics\n');
+  console.log('OmOC Diagnostics\n');
 
-let hasFailures = false;
-for (const check of checks) {
-  const symbol = check.status === 'pass' ? '✓' : check.status === 'warn' ? '⚠' : '✗';
-  console.log(`${symbol} ${check.name}: ${check.message}`);
-  if (check.status === 'fail') hasFailures = true;
+  let hasFailures = false;
+  for (const check of checks) {
+    const symbol = check.status === 'pass' ? '✓' : check.status === 'warn' ? '⚠' : '✗';
+    console.log(`${symbol} ${check.name}: ${check.message}`);
+    if (check.status === 'fail') hasFailures = true;
+  }
+
+  console.log('\n' + (hasFailures ? 'Some checks failed. Please fix the issues above.' : 'All checks passed!'));
+  return hasFailures ? 1 : 0;
 }
 
-console.log('\n' + (hasFailures ? 'Some checks failed. Please fix the issues above.' : 'All checks passed!'));
-process.exit(hasFailures ? 1 : 0);
+const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+  process.exit(runDoctorCli());
+}

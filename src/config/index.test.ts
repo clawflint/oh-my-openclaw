@@ -25,7 +25,7 @@ describe('Config Validation', () => {
 
   test('should reject config with invalid model tiers', () => {
     const config = createDefaultConfig('Test', 'repo');
-    (config as Record<string, unknown>).modelTiers = 'invalid';
+    ((config as unknown) as Record<string, unknown>).modelTiers = 'invalid';
     
     const result = validateConfig(config);
     expect(result.success).toBe(false);
@@ -48,7 +48,7 @@ describe('Config Validation', () => {
       workflows: { loopMaxIterations: 50 }
     };
     
-    const merged = mergeConfig(userConfig, baseConfig);
+    const merged = mergeConfig((userConfig as unknown) as Partial<typeof baseConfig>, baseConfig);
     
     expect(merged.project.name).toBe('Updated');
     expect(merged.project.repo).toBe('repo');
@@ -60,7 +60,7 @@ describe('Config Validation', () => {
     const baseConfig = createDefaultConfig('Base', 'repo');
     const userConfig = { project: { name: 'New' } };
     
-    const merged = mergeConfig(userConfig, baseConfig);
+    const merged = mergeConfig((userConfig as unknown) as Partial<typeof baseConfig>, baseConfig);
     
     expect(merged.costControls.sessionBudgetUsd).toBe(10.0);
     expect(merged.concurrency.maxParallelWorkers).toBe(5);

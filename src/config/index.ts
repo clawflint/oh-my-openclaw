@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { OmocConfig, AgentConfig, AgentRole, ModelTier, WorkCategory } from '../types/index.js';
+import type { OmocConfig, ModelTier, WorkCategory } from '../types/index.js';
 
 export const ProjectConfigSchema = z.object({
   name: z.string().min(1),

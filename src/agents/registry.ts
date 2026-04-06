@@ -1,4 +1,4 @@
-import type { AgentConfig, AgentRole, AgentMode, AgentLayer } from '../types/index.js';
+import type { AgentConfig, AgentRole } from '../types/index.js';
 
 export const AGENT_REGISTRY: Record<AgentRole, AgentConfig> = {
   lead: {

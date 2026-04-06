@@ -33,14 +33,14 @@ export class ScoutAgent {
     ];
   }
 
-  async findPattern(pattern: string): Promise<string[]> {
+  async findPattern(_pattern: string): Promise<string[]> {
     return [
       'src/pattern1.ts',
       'src/pattern2.ts'
     ];
   }
 
-  async mapDirectoryStructure(path: string): Promise<Record<string, string[]>> {
+  async mapDirectoryStructure(_path: string): Promise<Record<string, string[]>> {
     return {
       src: ['components/', 'utils/', 'types/'],
       tests: ['unit/', 'integration/']
@@ -74,7 +74,7 @@ export class ResearcherAgent {
     };
   }
 
-  private async research(input: ResearchInput): Promise<ResearchResult[]> {
+  private async research(_input: ResearchInput): Promise<ResearchResult[]> {
     return [
       {
         title: 'Example Documentation',
@@ -92,7 +92,7 @@ export class ResearcherAgent {
     };
   }
 
-  async findBestPractices(topic: string): Promise<string[]> {
+  async findBestPractices(_topic: string): Promise<string[]> {
     return [
       'Always validate inputs',
       'Use type safety',
@@ -164,7 +164,7 @@ export class ObserverAgent {
     };
   }
 
-  async compareScreenshotToDesign(screenshotPath: string, designPath: string): Promise<{
+  async compareScreenshotToDesign(_screenshotPath: string, _designPath: string): Promise<{
     matches: boolean;
     differences: string[];
   }> {

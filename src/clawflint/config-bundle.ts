@@ -1,4 +1,5 @@
 import type { OmocConfig } from "../types/index.js";
+import { createHmac } from "crypto";
 
 export interface ClawFlintConfigBundle {
   configVersionId: string;
@@ -105,11 +106,18 @@ export class ConfigBundleManager {
     bundle: Record<string, unknown>,
     signature: string,
   ): boolean {
-    const crypto = require("crypto");
-    const secret = process.env.CONFIG_BUNDLE_SIGNING_SECRET || "dev-secret";
+    const secret = process.env.CONFIG_BUNDLE_SIGNING_SECRET;
+    const allowInsecure = process.env.OMOC_ALLOW_INSECURE_BUNDLE === "true";
+    if (!secret) {
+      if (allowInsecure) {
+        console.warn("[config] Signature verification bypassed (OMOC_ALLOW_INSECURE_BUNDLE=true)");
+        return true;
+      }
+      console.error("[config] Missing CONFIG_BUNDLE_SIGNING_SECRET");
+      return false;
+    }
 
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
+    const expectedSignature = createHmac("sha256", secret)
       .update(JSON.stringify(bundle))
       .digest("hex");
 

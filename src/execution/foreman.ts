@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { Task, Worker, Session, TaskStatus } from '../types/index.js';
+import type { Task, Worker, Session } from '../types/index.js';
 
 export interface TaskAssignment {
   taskId: string;

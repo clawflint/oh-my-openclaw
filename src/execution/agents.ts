@@ -21,7 +21,7 @@ export class ArchitectAgent {
   readonly description = 'Deep Worker - Complex refactoring, system redesigns';
 
   async execute(input: ArchitectInput): Promise<AgentExecutionResult> {
-    const { plan, phaseIndex, task } = input;
+    const { task } = input;
 
     const output: ArchitectOutput = {
       implementation: this.generateImplementation(task),
@@ -140,19 +140,19 @@ export class ReviewerAgent {
     };
   }
 
-  private checkSyntax(files: string[]): { passed: boolean; errors: string[] } {
+  private checkSyntax(_files: string[]): { passed: boolean; errors: string[] } {
     return { passed: true, errors: [] };
   }
 
-  private async runTests(files: string[]): Promise<{ passed: boolean; coverage: number }> {
+  private async runTests(_files: string[]): Promise<{ passed: boolean; coverage: number }> {
     return { passed: true, coverage: 0 };
   }
 
-  private checkStyle(files: string[]): { passed: boolean; warnings: string[] } {
+  private checkStyle(_files: string[]): { passed: boolean; warnings: string[] } {
     return { passed: true, warnings: [] };
   }
 
-  private checkSecurity(files: string[]): { passed: boolean; vulnerabilities: string[] } {
+  private checkSecurity(_files: string[]): { passed: boolean; vulnerabilities: string[] } {
     return { passed: true, vulnerabilities: [] };
   }
 }
@@ -168,7 +168,7 @@ export class CostTracker {
     this.taskBudget = taskBudget;
   }
 
-  recordUsage(taskId: string, inputTokens: number, outputTokens: number, costUsd: number): { withinBudget: boolean; alert?: string } {
+  recordUsage(taskId: string, _inputTokens: number, _outputTokens: number, costUsd: number): { withinBudget: boolean; alert?: string } {
     this.spent += costUsd;
     
     const currentTaskSpend = this.taskSpent.get(taskId) || 0;

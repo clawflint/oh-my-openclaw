@@ -133,26 +133,38 @@ describe('Checkpoint Tool', () => {
   test('should save checkpoint', () => {
     const tool = createCheckpointTool();
     const result = tool.execute('save');
-    expect(result.saved).toBe(true);
-    expect(result.checkpointId).toBeTruthy();
+    expect('saved' in result).toBe(true);
+    if ('saved' in result) {
+      expect(result.saved).toBe(true);
+      expect(result.checkpointId).toBeTruthy();
+    }
   });
 
   test('should load checkpoint', () => {
     const tool = createCheckpointTool();
     const result = tool.execute('load', 'cp-123');
-    expect(result.loaded).toBe(true);
-    expect(result.checkpointId).toBe('cp-123');
+    expect('loaded' in result).toBe(true);
+    if ('loaded' in result) {
+      expect(result.loaded).toBe(true);
+      expect(result.checkpointId).toBe('cp-123');
+    }
   });
 
   test('should list checkpoints', () => {
     const tool = createCheckpointTool();
     const result = tool.execute('list');
-    expect(result.checkpoints).toBeArray();
+    expect('checkpoints' in result).toBe(true);
+    if ('checkpoints' in result) {
+      expect(result.checkpoints).toBeArray();
+    }
   });
 
   test('should return error for invalid action', () => {
     const tool = createCheckpointTool();
     const result = tool.execute('invalid' as never);
-    expect(result.error).toBe('Invalid action');
+    expect('error' in result).toBe(true);
+    if ('error' in result) {
+      expect(result.error).toBe('Invalid action');
+    }
   });
 });

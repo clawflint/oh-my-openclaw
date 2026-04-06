@@ -1,10 +1,11 @@
-import type { CommandHandler, CommandContext, CommandResult, StateManager } from '../commands/handlers.js';
+import type { CommandHandler } from './handlers.js';
+import type { CommandContext, CommandResult, StateManager } from '../types/index.js';
 
 export class OmocHealthCommand implements CommandHandler {
   name = '/omoc health';
   description = 'Lightweight health check';
 
-  async execute(context: CommandContext, stateManager: StateManager): Promise<CommandResult> {
+  async execute(_context: CommandContext, stateManager: StateManager): Promise<CommandResult> {
     const checks = {
       plugin: true,
       runtime: true,
@@ -38,9 +39,10 @@ export class OmocConfigCommand implements CommandHandler {
   name = '/omoc config';
   description = 'Show current configuration';
 
-  async execute(context: CommandContext, stateManager: StateManager): Promise<CommandResult> {
-    const { createDefaultConfig } = await import('../config/index.js');
-    const config = createDefaultConfig('Project', 'repo');
+  async execute(_context: CommandContext, _stateManager: StateManager): Promise<CommandResult> {
+    const { configManager } = await import('../core/config-manager.js');
+    await configManager.initialize();
+    const config = configManager.getConfig();
 
     const maskedConfig = {
       ...config,
@@ -52,8 +54,8 @@ export class OmocConfigCommand implements CommandHandler {
 
     return {
       success: true,
-      message: `Configuration:\n${JSON.stringify(maskedConfig, null, 2)}`,
-      data: { config: maskedConfig }
+      message: `Configuration (${configManager.getMode()} mode):\n${JSON.stringify(maskedConfig, null, 2)}`,
+      data: { config: maskedConfig, mode: configManager.getMode() }
     };
   }
 }

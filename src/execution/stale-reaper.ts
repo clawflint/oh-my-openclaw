@@ -1,4 +1,3 @@
-import type { Session, Task, Worker } from '../types/index.js';
 import type { StateManager } from '../types/index.js';
 
 export class StaleTaskReaper {

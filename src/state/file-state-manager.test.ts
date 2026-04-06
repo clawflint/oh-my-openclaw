@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { existsSync, mkdirSync, rmdirSync, unlinkSync, readdirSync } from 'fs';
+import { existsSync, rmdirSync, unlinkSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { FileStateManager } from '../state/file-state-manager.js';
 import type { Session, Task, Worker } from '../types/index.js';

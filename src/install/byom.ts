@@ -5,8 +5,15 @@
  */
 
 import { execSync } from "child_process";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+} from "fs";
 import { join } from "path";
+import { fileURLToPath } from "url";
 
 interface InstallOptions {
   workspaceId: string;
@@ -74,10 +81,43 @@ function createDirectories(installDir: string) {
   console.log("✓ Directories created");
 }
 
-function downloadWorker(_installDir: string) {
+async function downloadWorker(options: InstallOptions, installDir: string): Promise<string> {
   console.log("\n📥 Downloading ClawFlint worker...");
 
-  console.log("✓ Worker downloaded");
+  const binDir = join(installDir, "bin");
+  if (!existsSync(binDir)) {
+    mkdirSync(binDir, { recursive: true });
+  }
+
+  const outputPath = join(binDir, "clawflint-worker");
+  const localBinaryPath = process.env.CLAWFLINT_WORKER_BINARY_PATH;
+  if (localBinaryPath) {
+    copyFileSync(localBinaryPath, outputPath);
+    chmodSync(outputPath, 0o755);
+    console.log(`✓ Worker copied from local binary: ${localBinaryPath}`);
+    return outputPath;
+  }
+
+  const downloadUrl = process.env.CLAWFLINT_WORKER_BINARY_URL ||
+    `${options.apiUrl.replace(/\/$/, "")}/internal/workers/byom/binary`;
+
+  const response = await fetch(downloadUrl, {
+    headers: {
+      Authorization: `Bearer ${options.joinToken}`,
+      "X-Workspace-Id": options.workspaceId,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Worker download failed: ${response.status} ${response.statusText}`);
+  }
+
+  const binary = Buffer.from(await response.arrayBuffer());
+  writeFileSync(outputPath, binary);
+  chmodSync(outputPath, 0o755);
+
+  console.log(`✓ Worker downloaded to ${outputPath}`);
+  return outputPath;
 }
 
 function createConfig(options: InstallOptions, installDir: string) {
@@ -130,10 +170,12 @@ WantedBy=multi-user.target
     console.log(`  Run: sudo systemctl enable ${SERVICE_NAME}`);
     console.log(`  Run: sudo systemctl start ${SERVICE_NAME}`);
   } catch {
+    const fallbackPath = join(installDir, `${SERVICE_NAME}.service`);
+    writeFileSync(fallbackPath, serviceContent);
     console.log("⚠ Could not create systemd service (requires root)");
     console.log(
       "  Service file saved to:",
-      join(installDir, `${SERVICE_NAME}.service`),
+      fallbackPath,
     );
   }
 }
@@ -164,10 +206,9 @@ Support:
 `);
 }
 
-async function main() {
+export async function runByomInstaller(args: string[] = process.argv.slice(2)) {
   printBanner();
 
-  const args = process.argv.slice(2);
   const workspaceId =
     args.find((a) => a.startsWith("--workspace="))?.split("=")[1] ||
     process.env.CLAWFLINT_WORKSPACE_ID;
@@ -212,14 +253,17 @@ async function main() {
   };
 
   createDirectories(INSTALL_DIR);
-  downloadWorker(INSTALL_DIR);
+  await downloadWorker(options, INSTALL_DIR);
   createConfig(options, INSTALL_DIR);
   createSystemdService(INSTALL_DIR);
 
   printNextSteps(INSTALL_DIR);
 }
 
-main().catch((err) => {
-  console.error("❌ Installation failed:", err);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+  runByomInstaller().catch((err) => {
+    console.error("❌ Installation failed:", err);
+    process.exit(1);
+  });
+}

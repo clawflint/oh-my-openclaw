@@ -29,6 +29,7 @@ export * from './bridge/category-router.js';
 export * from './bridge/subagent-bridge.js';
 export * from './bridge/prompt-adapter.js';
 export * from './bridge/fallback-executor.js';
+export * from './pipeline/intent-router.js';
 export * from './pipeline/run-pipeline.js';
 export * from './pipeline/cost-tracker.js';
 export * from './pipeline/approval-gate.js';

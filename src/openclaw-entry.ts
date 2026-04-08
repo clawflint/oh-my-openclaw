@@ -1,0 +1,226 @@
+/**
+ * OpenClaw Plugin Entry Point
+ * Wires OmOC orchestration to OpenClaw's plugin system
+ */
+
+import { OmocPlugin } from './plugin.js';
+import { AGENT_REGISTRY } from './agents/index.js';
+import { OMOcPluginManifest } from './plugin/manifest.js';
+import { SubagentBridge } from './bridge/subagent-bridge.js';
+import { routeCategory } from './bridge/category-router.js';
+import { runPipeline } from './pipeline/run-pipeline.js';
+import type { AgentRole, WorkCategory } from './types/index.js';
+
+interface OpenClawPluginApi {
+  registerCommand(opts: {
+    name: string;
+    description: string;
+    acceptsArgs?: boolean;
+    handler: (ctx: CommandContext) => Promise<string | void>;
+  }): void;
+  registerTool?(opts: {
+    name: string;
+    description: string;
+    parameters?: Record<string, unknown>;
+    handler: (params: Record<string, unknown>) => Promise<unknown>;
+  }): void;
+  runtime?: {
+    subagent: {
+      run(params: { sessionKey: string; message: string; model?: string; deliver?: boolean }): Promise<{ runId: string }>;
+      waitForRun(params: { runId: string; timeoutMs?: number }): Promise<{ status: string; tokenStats?: { input: number; output: number } }>;
+      getSessionMessages(params: { sessionKey: string; limit?: number }): Promise<Array<{ text: string }>>;
+      deleteSession(params: { sessionKey: string }): Promise<void>;
+    };
+  };
+}
+
+interface CommandContext {
+  args?: string;
+  channel?: string;
+  sender?: string;
+  sessionId?: string;
+  [key: string]: unknown;
+}
+
+let omocInstance: OmocPlugin | null = null;
+let bridge: SubagentBridge | null = null;
+
+async function getOmoc(): Promise<OmocPlugin> {
+  if (!omocInstance) {
+    omocInstance = await OmocPlugin.create({ mode: 'standalone' });
+  }
+  return omocInstance;
+}
+
+function register(api: OpenClawPluginApi): void {
+  if (api.runtime?.subagent) {
+    bridge = new SubagentBridge(api as any);
+  }
+
+  api.registerCommand({
+    name: 'omoc',
+    description: 'Oh My OpenClaw - Multi-agent orchestration',
+    acceptsArgs: true,
+    handler: async (ctx: CommandContext) => {
+      const args = ctx.args?.trim() ?? '';
+      const subcommand = args.split(/\s+/)[0]?.toLowerCase() ?? 'status';
+      const omoc = await getOmoc();
+
+      switch (subcommand) {
+        case 'doctor': {
+          const config = omoc.getConfig();
+          const mode = omoc.getMode();
+          const agents = Object.keys(AGENT_REGISTRY);
+          return [
+            '🔧 OmOC Doctor',
+            `Mode: ${mode}`,
+            `Bridge: ${bridge ? 'CONNECTED (api.runtime.subagent)' : 'NOT CONNECTED (stub mode)'}`,
+            `Project: ${config.project.name}`,
+            `Agents: ${agents.length} registered (${agents.join(', ')})`,
+            `Version: ${OMOcPluginManifest.version}`,
+          ].join('\n');
+        }
+        case 'status': {
+          const config = omoc.getConfig();
+          return [
+            '📊 OmOC Status',
+            `Mode: ${omoc.getMode()}`,
+            `Bridge: ${bridge ? 'active' : 'stub'}`,
+            `Budget: $${config.costControls.sessionBudgetUsd} session / $${config.costControls.taskBudgetUsd} task`,
+            `Max Workers: ${config.workflows.parallelMaxWorkers}`,
+          ].join('\n');
+        }
+        case 'health':
+          return `💚 OmOC Health: OK\nBridge: ${bridge ? 'connected' : 'disconnected'}`;
+        case 'config': {
+          const config = omoc.getConfig();
+          return '⚙️ OmOC Config:\n' + JSON.stringify(config, null, 2).slice(0, 1000);
+        }
+        default:
+          return [
+            '🦞 Oh My OpenClaw (OmOC)',
+            'Commands: /omoc doctor | status | health | config',
+            'Orchestration: /run <task>',
+            'Tools: delegate (category-based) | summon (by name)',
+          ].join('\n');
+      }
+    },
+  });
+
+  api.registerCommand({
+    name: 'run',
+    description: 'Execute task through full OmOC pipeline (classify→plan→build→review)',
+    acceptsArgs: true,
+    handler: async (ctx: CommandContext) => {
+      const task = ctx.args?.trim();
+      if (!task) return 'Usage: /run <task description>';
+      if (!bridge) return '❌ OmOC bridge not connected. api.runtime.subagent unavailable.';
+
+      const omoc = await getOmoc();
+      const result = await runPipeline(bridge, task, omoc.getConfig().costControls);
+
+      const stageReport = result.stages
+        .map((s) => `  ${s.stage}: ${s.agent} (${s.model}) — ${s.durationMs}ms`)
+        .join('\n');
+
+      return [
+        `🦞 /run ${result.status === 'completed' ? '✅' : '❌'}`,
+        `Task: ${task}`,
+        `Stages:\n${stageReport}`,
+        `Cost: $${result.totalCost.toFixed(4)} | Tokens: ${result.totalTokens}`,
+        `Summary: ${result.summary}`,
+      ].join('\n');
+    },
+  });
+
+  api.registerCommand({
+    name: 'omoc-status',
+    description: 'Show OmOC orchestration status',
+    handler: async () => {
+      const omoc = await getOmoc();
+      return `OmOC running in ${omoc.getMode()} mode | Bridge: ${bridge ? 'active' : 'stub'}`;
+    },
+  });
+
+  api.registerCommand({
+    name: 'hello',
+    description: 'Simple hello command for OmOC',
+    handler: async () => 'Hello World! OmOC is running.',
+  });
+
+  if (api.registerTool) {
+    api.registerTool({
+      name: 'delegate',
+      description: 'Delegate a task to a specialized OmOC agent. Routes by category to the right agent and model.',
+      parameters: {
+        category: { type: 'string', description: 'Work category: quick, standard, deep, strategic, visual, research, creative' },
+        taskDescription: { type: 'string', description: 'Task to delegate' },
+        preferAgent: { type: 'string', description: 'Optional: specific agent role (lead, builder, architect, etc.)' },
+      },
+      handler: async (params) => {
+        const category = (params.category as string) || 'standard';
+        const task = params.taskDescription as string;
+        const preferAgent = params.preferAgent as AgentRole | undefined;
+
+        if (!bridge) {
+          const route = routeCategory(category, preferAgent);
+          return { status: 'stub', agent: route.agent, model: route.model, message: 'Bridge not connected. Would spawn: ' + route.agent };
+        }
+
+        const result = preferAgent
+          ? await bridge.spawn(preferAgent, task)
+          : await bridge.spawnByCategory(category as WorkCategory, task);
+
+        return { status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId };
+      },
+    });
+
+    api.registerTool({
+      name: 'summon',
+      description: 'Summon a specific OmOC agent by name.',
+      parameters: {
+        agent: { type: 'string', description: 'Agent role: lead, foreman, planner, builder, architect, reviewer, scout, researcher, observer' },
+        taskDescription: { type: 'string', description: 'Task for the agent' },
+      },
+      handler: async (params) => {
+        const agentName = params.agent as AgentRole;
+        const task = params.taskDescription as string;
+
+        if (!AGENT_REGISTRY[agentName]) {
+          return { status: 'error', message: `Unknown agent: ${agentName}. Available: ${Object.keys(AGENT_REGISTRY).join(', ')}` };
+        }
+
+        if (!bridge) return { status: 'stub', agent: agentName, message: 'Bridge not connected.' };
+
+        const result = await bridge.spawn(agentName, task);
+        return { status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId };
+      },
+    });
+
+    api.registerTool({
+      name: 'checkpoint',
+      description: 'Save/load/list execution checkpoints',
+      parameters: {
+        action: { type: 'string', enum: ['save', 'load', 'list'] },
+        checkpointId: { type: 'string', description: 'Checkpoint ID for load action' },
+      },
+      handler: async (params) => {
+        return { status: 'not_implemented', action: params.action };
+      },
+    });
+  }
+}
+
+export default {
+  id: 'oh-my-openclaw',
+  name: 'Oh My OpenClaw',
+  description: 'Multi-agent orchestration for OpenClaw by ClawFlint',
+  configSchema: {
+    type: 'object' as const,
+    additionalProperties: false,
+    properties: {
+      mode: { type: 'string', enum: ['standalone', 'clawflint'], default: 'standalone' },
+    },
+  },
+  register,
+};

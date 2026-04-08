@@ -48,3 +48,4 @@ export { todoEnforcerHandler, detectIncompleteTodos } from './todo-enforcer.js';
 export { evaluateRalphContinuation, detectIncompleteWork, detectCompletionSignal, createInitialRalphState, DEFAULT_RALPH_CONFIG } from '../services/ralph-loop.js';
 export { pipelineEnforcerHandler, enforceRunPipeline, enforcePlanPipeline } from './pipeline-enforcer.js';
 export { commentCheckerHandler, detectAiSlop, AI_SLOP_PATTERNS } from './comment-checker.js';
+export { ultraworkEnforcerHandler, enforceUltraworkPipeline } from './ultrawork-enforcer.js';

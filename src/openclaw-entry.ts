@@ -16,6 +16,7 @@ import { keywordDetectorHandler } from './hooks/keyword-detector.js';
 import { todoEnforcerHandler } from './hooks/todo-enforcer.js';
 import { pipelineEnforcerHandler } from './hooks/pipeline-enforcer.js';
 import { commentCheckerHandler } from './hooks/comment-checker.js';
+import { ultraworkEnforcerHandler } from './hooks/ultrawork-enforcer.js';
 
 interface OpenClawPluginApi {
   registerCommand(opts: {
@@ -94,6 +95,11 @@ function register(api: OpenClawPluginApi): void {
     // Pipeline enforcer — rewrites /run and /plan messages
     (api as any).registerHook(['message:received'], (context: any) => {
       pipelineEnforcerHandler(context);
+    });
+
+    // Ultrawork enforcer — rewrites /ultrawork messages into full team pipeline
+    (api as any).registerHook(['message:received'], (context: any) => {
+      ultraworkEnforcerHandler(context);
     });
   }
 

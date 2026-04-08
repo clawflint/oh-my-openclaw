@@ -45,3 +45,5 @@ export * from './implementation.js';
 export { contextInjectorHandler } from './context-injector.js';
 export { keywordDetectorHandler, detectKeywords } from './keyword-detector.js';
 export { todoEnforcerHandler, detectIncompleteTodos } from './todo-enforcer.js';
+export { evaluateRalphContinuation, detectIncompleteWork, detectCompletionSignal, createInitialRalphState, DEFAULT_RALPH_CONFIG } from '../services/ralph-loop.js';
+export { pipelineEnforcerHandler, enforceRunPipeline, enforcePlanPipeline } from './pipeline-enforcer.js';

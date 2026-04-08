@@ -13,6 +13,7 @@ import type { AgentRole, WorkCategory } from './types/index.js';
 import { contextInjectorHandler } from './hooks/context-injector.js';
 import { keywordDetectorHandler } from './hooks/keyword-detector.js';
 import { todoEnforcerHandler } from './hooks/todo-enforcer.js';
+import { pipelineEnforcerHandler } from './hooks/pipeline-enforcer.js';
 
 interface OpenClawPluginApi {
   registerCommand(opts: {
@@ -75,6 +76,11 @@ function register(api: OpenClawPluginApi): void {
       if (directive && context.metadata) {
         context.metadata.omocDirective = directive;
       }
+    });
+
+    // Pipeline enforcer — rewrites /run and /plan messages
+    (api as any).registerHook(['message:received'], (context: any) => {
+      pipelineEnforcerHandler(context);
     });
   }
 

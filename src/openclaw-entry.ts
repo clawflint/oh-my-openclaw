@@ -4,6 +4,7 @@
  */
 
 import { OmocPlugin } from './plugin.js';
+import { startHealthServer } from './services/health-server.js';
 import { AGENT_REGISTRY } from './agents/index.js';
 import { OMOcPluginManifest } from './plugin/manifest.js';
 import { SubagentBridge } from './bridge/subagent-bridge.js';
@@ -14,6 +15,7 @@ import { contextInjectorHandler } from './hooks/context-injector.js';
 import { keywordDetectorHandler } from './hooks/keyword-detector.js';
 import { todoEnforcerHandler } from './hooks/todo-enforcer.js';
 import { pipelineEnforcerHandler } from './hooks/pipeline-enforcer.js';
+import { commentCheckerHandler } from './hooks/comment-checker.js';
 
 interface OpenClawPluginApi {
   registerCommand(opts: {
@@ -57,6 +59,9 @@ async function getOmoc(): Promise<OmocPlugin> {
 }
 
 function register(api: OpenClawPluginApi): void {
+  // Start the HTTP health endpoint on :9100/health
+  startHealthServer();
+
   if (api.runtime?.subagent) {
     bridge = new SubagentBridge(api as any);
   }
@@ -75,6 +80,14 @@ function register(api: OpenClawPluginApi): void {
       const directive = todoEnforcerHandler(context);
       if (directive && context.metadata) {
         context.metadata.omocDirective = directive;
+      }
+    });
+
+    // Comment checker — detects AI slop in write/edit results
+    (api as any).registerHook(['tool_result_persist'], (context: any) => {
+      const report = commentCheckerHandler(context);
+      if (report && context.metadata) {
+        context.metadata.omocSlopReport = report;
       }
     });
 

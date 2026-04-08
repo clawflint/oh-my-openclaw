@@ -1,6 +1,7 @@
 import { AGENT_REGISTRY } from '../agents/index.js';
 import { resolveModel } from './model-resolver.js';
 import { routeCategory } from './category-router.js';
+import { adaptPromptForModel } from './prompt-adapter.js';
 import type { AgentRole, WorkCategory } from '../types/index.js';
 
 interface SubagentApi {
@@ -45,7 +46,8 @@ export class SubagentBridge {
     const model = resolveModel(agentConfig.defaultTier);
     const sessionKey = makeSessionKey(role);
     const timeout = options?.timeout || 120000;
-    const message = `${agentConfig.systemPrompt}\n\n---\n\nTask: ${task}`;
+    const rawMessage = `${agentConfig.systemPrompt}\n\n---\n\nTask: ${task}`;
+    const message = adaptPromptForModel(rawMessage, model);
 
     const { runId } = await this.api.runtime.subagent.run({ sessionKey, message, model, deliver: false });
     const completion = await this.api.runtime.subagent.waitForRun({ runId, timeoutMs: timeout });

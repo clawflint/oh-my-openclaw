@@ -33,4 +33,5 @@ export * from './pipeline/run-pipeline.js';
 export * from './pipeline/cost-tracker.js';
 export * from './pipeline/approval-gate.js';
 export * from './pipeline/pipeline-events.js';
+export { ConcurrencyLimiter } from './pipeline/concurrency-limiter.js';
 export * from './services/ralph-loop.js';

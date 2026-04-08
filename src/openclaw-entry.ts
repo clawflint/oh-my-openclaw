@@ -141,7 +141,30 @@ function register(api: OpenClawPluginApi): void {
           return `💚 OmOC Health: OK\nBridge: ${bridge ? 'connected' : 'disconnected'}`;
         case 'config': {
           const config = omoc.getConfig();
-          return '⚙️ OmOC Config:\n' + JSON.stringify(config, null, 2).slice(0, 1000);
+          const masked = JSON.parse(JSON.stringify(config));
+          // Mask any string that looks like a secret
+          const maskSecrets = (obj: any, depth = 0): any => {
+            if (depth > 10) return obj;
+            if (typeof obj === 'string') {
+              if (/^(sk-|token-|key-|secret-|password|Bearer )/i.test(obj) || obj.length > 40) {
+                return obj.substring(0, 8) + '...' + obj.substring(obj.length - 4);
+              }
+              return obj;
+            }
+            if (Array.isArray(obj)) return obj.map(v => maskSecrets(v, depth + 1));
+            if (typeof obj === 'object' && obj !== null) {
+              for (const key of Object.keys(obj)) {
+                if (/secret|token|key|password|credential|auth/i.test(key)) {
+                  obj[key] = typeof obj[key] === 'string' ? '***REDACTED***' : obj[key];
+                } else {
+                  obj[key] = maskSecrets(obj[key], depth + 1);
+                }
+              }
+            }
+            return obj;
+          };
+          maskSecrets(masked);
+          return '⚙️ OmOC Config:\n' + JSON.stringify(masked, null, 2).slice(0, 1000);
         }
         default:
           return [

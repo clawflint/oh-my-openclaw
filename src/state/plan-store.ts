@@ -1,5 +1,6 @@
-import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
+import { readFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { atomicWriteSync } from './atomic-write.js';
 
 export interface PlanRecord {
   id: string;
@@ -23,9 +24,9 @@ export class PlanStore {
 
   save(plan: PlanRecord): void {
     const path = join(this.dir, `${plan.id}.json`);
-    writeFileSync(path, JSON.stringify(plan, null, 2));
+    atomicWriteSync(path, JSON.stringify(plan, null, 2));
     // Update latest pointer
-    writeFileSync(join(this.dir, 'latest.json'), JSON.stringify({ id: plan.id, updatedAt: plan.updatedAt }));
+    atomicWriteSync(join(this.dir, 'latest.json'), JSON.stringify({ id: plan.id, updatedAt: plan.updatedAt }));
   }
 
   load(id: string): PlanRecord | null {

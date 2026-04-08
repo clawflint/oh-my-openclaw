@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { runPipeline } from './run-pipeline.js';
+import { PipelineEventEmitter } from './pipeline-events.js';
 import type { SpawnResult } from '../bridge/subagent-bridge.js';
 import type { CostControlsConfig } from '../types/index.js';
 
@@ -69,5 +70,28 @@ describe('runPipeline', () => {
     const result = await runPipeline(bridge as any, 'Expensive', tinyBudget);
     expect(result.status).toBe('failed');
     expect(result.summary).toContain('budget');
+  });
+
+  it('emits stage events when PipelineEventEmitter is provided', async () => {
+    const bridge = createMockBridge();
+    const emitter = new PipelineEventEmitter();
+    const emittedTypes: string[] = [];
+    emitter.addSink((event) => emittedTypes.push(event.type));
+
+    await runPipeline(bridge as any, 'Add /hello endpoint', budget, { events: emitter, pipelineId: 'test-pipe' });
+
+    expect(emittedTypes).toContain('pipeline:started');
+    expect(emittedTypes).toContain('pipeline:stage:started');
+    expect(emittedTypes).toContain('pipeline:stage:completed');
+    expect(emittedTypes).toContain('pipeline:completed');
+  });
+
+  it('includes approval stages when approvalMode is required', async () => {
+    const bridge = createMockBridge();
+    const result = await runPipeline(bridge as any, 'Add feature', budget, { approvalMode: 'required' });
+    expect(result.status).toBe('completed');
+    const stageNames = result.stages.map((s) => s.stage);
+    expect(stageNames).toContain('approval:build');
+    expect(stageNames).toContain('approval:review');
   });
 });

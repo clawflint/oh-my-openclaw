@@ -44,15 +44,17 @@ export interface ModelConfig {
 }
 
 // Category types
-export type WorkCategory = 
+export type WorkCategory =
   | 'quick'
   | 'standard'
   | 'deep'
   | 'strategic'
   | 'visual'
   | 'research'
-  | 'creative'
-  | string; // Custom categories
+  | 'creative';
+
+// Use CustomWorkCategory for categories not in the standard set
+export type CustomWorkCategory = WorkCategory | string;
 
 export interface CategoryConfig {
   purpose: string;

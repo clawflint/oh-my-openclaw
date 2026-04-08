@@ -31,6 +31,7 @@ interface OpenClawPluginApi {
     parameters?: Record<string, unknown>;
     execute: (toolCallId: string, params: Record<string, unknown>) => Promise<unknown>;
   }): void;
+  registerHook?(events: string[], handler: (context: any) => void): void;
   runtime?: {
     subagent: {
       run(params: { sessionKey: string; message: string; model?: string; deliver?: boolean }): Promise<{ runId: string }>;
@@ -68,16 +69,16 @@ function register(api: OpenClawPluginApi): void {
   }
 
   // Register hooks
-  if ((api as any).registerHook) {
-    (api as any).registerHook(['agent:bootstrap'], (context: any) => {
+  if (api.registerHook) {
+    api.registerHook(['agent:bootstrap'], (context: any) => {
       contextInjectorHandler(context);
     });
 
-    (api as any).registerHook(['message:received'], (context: any) => {
+    api.registerHook(['message:received'], (context: any) => {
       keywordDetectorHandler(context);
     });
 
-    (api as any).registerHook(['tool_result_persist'], (context: any) => {
+    api.registerHook(['tool_result_persist'], (context: any) => {
       const directive = todoEnforcerHandler(context);
       if (directive && context.metadata) {
         context.metadata.omocDirective = directive;
@@ -85,7 +86,7 @@ function register(api: OpenClawPluginApi): void {
     });
 
     // Comment checker — detects AI slop in write/edit results
-    (api as any).registerHook(['tool_result_persist'], (context: any) => {
+    api.registerHook(['tool_result_persist'], (context: any) => {
       const report = commentCheckerHandler(context);
       if (report && context.metadata) {
         context.metadata.omocSlopReport = report;
@@ -93,12 +94,12 @@ function register(api: OpenClawPluginApi): void {
     });
 
     // Pipeline enforcer — rewrites /run and /plan messages
-    (api as any).registerHook(['message:received'], (context: any) => {
+    api.registerHook(['message:received'], (context: any) => {
       pipelineEnforcerHandler(context);
     });
 
     // Ultrawork enforcer — rewrites /ultrawork messages into full team pipeline
-    (api as any).registerHook(['message:received'], (context: any) => {
+    api.registerHook(['message:received'], (context: any) => {
       ultraworkEnforcerHandler(context);
     });
   }
@@ -251,21 +252,6 @@ function register(api: OpenClawPluginApi): void {
       },
     });
 
-    api.registerTool({
-      name: 'checkpoint',
-      description: 'Save, load, or list execution checkpoints for OmOC sessions.',
-      parameters: {
-        type: 'object',
-        properties: {
-          action: { type: 'string', enum: ['save', 'load', 'list'], description: 'Action to perform' },
-          checkpointId: { type: 'string', description: 'Checkpoint ID for load action' },
-        },
-        required: ['action'],
-      },
-      execute: async (_toolCallId: string, params: Record<string, unknown>) => {
-        return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_implemented', action: params.action }) }] };
-      },
-    });
   }
 }
 

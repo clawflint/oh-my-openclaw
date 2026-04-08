@@ -19,7 +19,7 @@ describe('createWorktreeBranch', () => {
 
 describe('listWorktrees', () => {
   it('returns array for current repo', () => {
-    const result = listWorktrees('/Users/engmsaleh/Repos/oh-my-openclaw');
+    const result = listWorktrees(process.cwd());
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThanOrEqual(1); // at least the main worktree
   });

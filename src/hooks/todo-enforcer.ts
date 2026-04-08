@@ -1,3 +1,5 @@
+import { INCOMPLETE_WORK_PATTERNS } from '../shared/patterns.js';
+
 export interface ToolResultContext {
   toolName: string;
   result: string;
@@ -5,14 +7,7 @@ export interface ToolResultContext {
   metadata?: Record<string, unknown>;
 }
 
-const TODO_PATTERNS = [
-  /TODO[:\s]/i,
-  /FIXME[:\s]/i,
-  /\[ \]/,  // unchecked checkbox
-  /incomplete/i,
-  /not yet implemented/i,
-  /placeholder/i,
-];
+const TODO_PATTERNS = INCOMPLETE_WORK_PATTERNS;
 
 export function detectIncompleteTodos(text: string): string[] {
   const matches: string[] = [];

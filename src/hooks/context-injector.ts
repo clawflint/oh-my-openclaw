@@ -14,7 +14,7 @@ function loadOmocContent(): string {
     omocContent = readFileSync(join(process.cwd(), 'OMOC.md'), 'utf-8');
   } catch {
     try {
-      omocContent = readFileSync(join(__dirname, '../../OMOC.md'), 'utf-8');
+      omocContent = readFileSync(join(import.meta.dirname, '../../OMOC.md'), 'utf-8');
     } catch {
       omocContent = '# OmOC not found\nOMOC.md could not be loaded.';
     }

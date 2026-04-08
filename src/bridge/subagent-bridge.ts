@@ -30,21 +30,21 @@ export interface SpawnOptions {
   background?: boolean;
 }
 
-let spawnCounter = 0;
-
-function makeSessionKey(role: AgentRole): string {
-  spawnCounter++;
-  return `agent:main:omoc:${role}-${Date.now().toString(36)}-${spawnCounter}`;
-}
-
 export class SubagentBridge {
   private api: SubagentApi;
+  private spawnCounter = 0;
+
   constructor(api: SubagentApi) { this.api = api; }
+
+  private makeSessionKey(role: AgentRole): string {
+    this.spawnCounter++;
+    return `agent:main:omoc:${role}-${Date.now().toString(36)}-${this.spawnCounter}`;
+  }
 
   async spawn(role: AgentRole, task: string, options?: SpawnOptions): Promise<SpawnResult> {
     const agentConfig = AGENT_REGISTRY[role];
     const model = resolveModel(agentConfig.defaultTier);
-    const sessionKey = makeSessionKey(role);
+    const sessionKey = this.makeSessionKey(role);
     const timeout = options?.timeout || 120000;
     const rawMessage = `${agentConfig.systemPrompt}\n\n---\n\nTask: ${task}`;
     const message = adaptPromptForModel(rawMessage, model);

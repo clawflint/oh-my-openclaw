@@ -1,3 +1,5 @@
+import { INCOMPLETE_WORK_PATTERNS } from '../shared/patterns.js';
+
 export interface RalphLoopConfig {
   maxIterations: number;
   enabled: boolean;
@@ -26,17 +28,7 @@ export function createInitialRalphState(): RalphState {
   };
 }
 
-const INCOMPLETE_PATTERNS = [
-  /TODO[:\s]/i,
-  /FIXME[:\s]/i,
-  /\[ \]/,
-  /not yet implemented/i,
-  /placeholder/i,
-  /will implement later/i,
-  /needs implementation/i,
-  /stub/i,
-  /incomplete/i,
-];
+const INCOMPLETE_PATTERNS = INCOMPLETE_WORK_PATTERNS;
 
 const COMPLETION_SIGNALS = [
   /all (tasks|items|todos) (are )?(done|complete|finished)/i,

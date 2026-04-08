@@ -22,7 +22,7 @@ interface OpenClawPluginApi {
     name: string;
     description: string;
     parameters?: Record<string, unknown>;
-    handler: (params: Record<string, unknown>) => Promise<unknown>;
+    execute: (toolCallId: string, params: Record<string, unknown>) => Promise<unknown>;
   }): void;
   runtime?: {
     subagent: {
@@ -151,61 +151,73 @@ function register(api: OpenClawPluginApi): void {
   if (api.registerTool) {
     api.registerTool({
       name: 'delegate',
-      description: 'Delegate a task to a specialized OmOC agent. Routes by category to the right agent and model.',
+      description: 'Delegate a task to a specialized OmOC agent. Routes by work category to the right agent and model. Categories: quick (simple fixes), standard (moderate), deep (complex refactoring), strategic (architecture), visual (UI/UX), research (docs lookup), creative (writing).',
       parameters: {
-        category: { type: 'string', description: 'Work category: quick, standard, deep, strategic, visual, research, creative' },
-        taskDescription: { type: 'string', description: 'Task to delegate' },
-        preferAgent: { type: 'string', description: 'Optional: specific agent role (lead, builder, architect, etc.)' },
+        type: 'object',
+        properties: {
+          category: { type: 'string', description: 'Work category: quick, standard, deep, strategic, visual, research, creative' },
+          taskDescription: { type: 'string', description: 'Task to delegate' },
+          preferAgent: { type: 'string', description: 'Optional: specific agent role (lead, builder, architect, reviewer, scout, researcher, observer)' },
+        },
+        required: ['category', 'taskDescription'],
       },
-      handler: async (params) => {
+      execute: async (_toolCallId: string, params: Record<string, unknown>) => {
         const category = (params.category as string) || 'standard';
         const task = params.taskDescription as string;
         const preferAgent = params.preferAgent as AgentRole | undefined;
 
         if (!bridge) {
           const route = routeCategory(category, preferAgent);
-          return { status: 'stub', agent: route.agent, model: route.model, message: 'Bridge not connected. Would spawn: ' + route.agent };
+          return { content: [{ type: 'text', text: JSON.stringify({ status: 'stub', agent: route.agent, model: route.model, message: 'Bridge not connected. Would spawn: ' + route.agent }) }] };
         }
 
         const result = preferAgent
           ? await bridge.spawn(preferAgent, task)
           : await bridge.spawnByCategory(category as WorkCategory, task);
 
-        return { status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId };
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId }) }] };
       },
     });
 
     api.registerTool({
       name: 'summon',
-      description: 'Summon a specific OmOC agent by name.',
+      description: 'Summon a specific OmOC agent by name. Available agents: lead (orchestrator), foreman (execution manager), planner (strategic planning), builder (coding), architect (complex changes), reviewer (quality gate), scout (codebase search), researcher (docs lookup), observer (visual analysis).',
       parameters: {
-        agent: { type: 'string', description: 'Agent role: lead, foreman, planner, builder, architect, reviewer, scout, researcher, observer' },
-        taskDescription: { type: 'string', description: 'Task for the agent' },
+        type: 'object',
+        properties: {
+          agent: { type: 'string', description: 'Agent role to summon' },
+          taskDescription: { type: 'string', description: 'Task for the agent' },
+        },
+        required: ['agent', 'taskDescription'],
       },
-      handler: async (params) => {
+      execute: async (_toolCallId: string, params: Record<string, unknown>) => {
         const agentName = params.agent as AgentRole;
         const task = params.taskDescription as string;
 
         if (!AGENT_REGISTRY[agentName]) {
-          return { status: 'error', message: `Unknown agent: ${agentName}. Available: ${Object.keys(AGENT_REGISTRY).join(', ')}` };
+          return { content: [{ type: 'text', text: `Unknown agent: ${agentName}. Available: ${Object.keys(AGENT_REGISTRY).join(', ')}` }] };
         }
 
-        if (!bridge) return { status: 'stub', agent: agentName, message: 'Bridge not connected.' };
+        if (!bridge) return { content: [{ type: 'text', text: JSON.stringify({ status: 'stub', agent: agentName, message: 'Bridge not connected.' }) }] };
 
         const result = await bridge.spawn(agentName, task);
-        return { status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId };
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'completed', agent: result.agent, model: result.model, response: result.response, runId: result.runId }) }] };
       },
     });
 
     api.registerTool({
       name: 'checkpoint',
-      description: 'Save/load/list execution checkpoints',
+      description: 'Save, load, or list execution checkpoints for OmOC sessions.',
       parameters: {
-        action: { type: 'string', enum: ['save', 'load', 'list'] },
-        checkpointId: { type: 'string', description: 'Checkpoint ID for load action' },
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['save', 'load', 'list'], description: 'Action to perform' },
+          checkpointId: { type: 'string', description: 'Checkpoint ID for load action' },
+        },
+        required: ['action'],
       },
-      handler: async (params) => {
-        return { status: 'not_implemented', action: params.action };
+      execute: async (_toolCallId: string, params: Record<string, unknown>) => {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_implemented', action: params.action }) }] };
       },
     });
   }

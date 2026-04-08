@@ -1,0 +1,53 @@
+{
+  "id": "oh-my-openclaw",
+  "name": "Oh My OpenClaw",
+  "description": "Multi-agent orchestration for OpenClaw by ClawFlint",
+  "enabledByDefault": true,
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "mode": {
+        "type": "string",
+        "enum": ["standalone", "clawflint"],
+        "default": "standalone"
+      }
+    }
+  },
+  "capabilities": {
+    "hooks": [
+      "gateway:startup",
+      "agent:bootstrap",
+      "message:received",
+      "message:sent",
+      "tool_result_persist"
+    ],
+    "tools": [
+      {
+        "name": "delegate",
+        "description": "Category-based task delegation with model routing"
+      },
+      {
+        "name": "summon",
+        "description": "Direct agent invocation by name"
+      },
+      {
+        "name": "checkpoint",
+        "description": "Save/load/list execution checkpoints"
+      }
+    ],
+    "commands": [
+      "/run",
+      "/plan",
+      "/build",
+      "/loop",
+      "/parallel",
+      "/omoc",
+      "/status",
+      "/pause",
+      "/resume",
+      "/cancel",
+      "/cleanup"
+    ]
+  }
+}

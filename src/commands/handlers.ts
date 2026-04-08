@@ -218,6 +218,26 @@ export class CancelCommand implements CommandHandler {
   }
 }
 
+export class HelloCommand implements CommandHandler {
+  name = '/hello';
+  description = 'Simple hello world greeting';
+
+  async execute(context: CommandContext, _stateManager: StateManager): Promise<CommandResult> {
+    const name = context.args.join(' ').trim();
+    const greeting = name ? `Hello, ${name}!` : 'Hello, World!';
+    
+    return {
+      success: true,
+      message: greeting,
+      data: { 
+        greeting,
+        timestamp: new Date().toISOString(),
+        requestedName: name || null
+      }
+    };
+  }
+}
+
 export class PauseCommand implements CommandHandler {
   name = '/pause';
   description = 'Pause active session';

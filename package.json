@@ -16,7 +16,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts ./src/cli.ts --outdir ./dist --target node",
+    "build": "bun build ./src/index.ts ./src/cli.ts ./src/openclaw-entry.ts --outdir ./dist --target node",
     "dev": "bun run --watch src/index.ts",
     "start": "bun run dist/index.js",
     "test": "bun test",
@@ -40,5 +40,8 @@
   },
   "engines": {
     "bun": ">=1.1.0"
+  },
+  "openclaw": {
+    "extensions": ["./dist/openclaw-entry.js"]
   }
 }

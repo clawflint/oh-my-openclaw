@@ -1,5 +1,5 @@
 {
-  "id": "plan-2026-04-08T17-34-19",
+  "id": "plan-2026-04-08T17-11-05",
   "title": "Implementation Plan: design api",
   "description": "design api",
   "phases": [
@@ -8,7 +8,7 @@
       "description": "Core feature implementation",
       "tasks": [
         {
-          "id": "b6e25ef6-435a-4a71-82a0-5c87025eda38",
+          "id": "d01669f5-27fc-498e-8370-fd146585661e",
           "description": "Implement core functionality",
           "acceptanceCriteria": [
             "Feature works",
@@ -19,7 +19,7 @@
           "dependencies": []
         },
         {
-          "id": "3ff1cd8f-e34a-49bf-acd3-4e64250d3f69",
+          "id": "8e4647a0-949a-4f51-b712-e7e4482f7735",
           "description": "Add error handling",
           "acceptanceCriteria": [
             "Errors handled gracefully"
@@ -36,7 +36,7 @@
       "description": "Testing and validation",
       "tasks": [
         {
-          "id": "a74135e2-e8ac-4630-b98c-10ddedd36373",
+          "id": "d0007eb6-8851-4876-b8d4-f8ea752f4f43",
           "description": "Write unit tests",
           "acceptanceCriteria": [
             "Coverage > 80%"
@@ -46,7 +46,7 @@
           "dependencies": []
         },
         {
-          "id": "ef70b2c6-510b-40e5-9803-5b650a6eff59",
+          "id": "d243fa79-88dc-4293-a288-15ce6ed2d28c",
           "description": "Run integration tests",
           "acceptanceCriteria": [
             "All tests pass"
@@ -61,8 +61,8 @@
       ]
     }
   ],
-  "createdAt": "2026-04-08T17:34:19.413Z",
-  "updatedAt": "2026-04-08T17:34:19.414Z",
+  "createdAt": "2026-04-08T17:11:05.379Z",
+  "updatedAt": "2026-04-08T17:11:05.381Z",
   "status": "approved",
   "approvalGate": "required",
   "gaps": {
@@ -87,5 +87,5 @@
       "Consider parallel execution for independent tasks"
     ]
   },
-  "approvedAt": "2026-04-08T17:34:19.414Z"
+  "approvedAt": "2026-04-08T17:11:05.381Z"
 }

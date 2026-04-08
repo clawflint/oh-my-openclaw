@@ -42,3 +42,6 @@ export class HookRegistry {
 
 export const hookRegistry = new HookRegistry();
 export * from './implementation.js';
+export { contextInjectorHandler } from './context-injector.js';
+export { keywordDetectorHandler, detectKeywords } from './keyword-detector.js';
+export { todoEnforcerHandler, detectIncompleteTodos } from './todo-enforcer.js';

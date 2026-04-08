@@ -10,6 +10,9 @@ import { SubagentBridge } from './bridge/subagent-bridge.js';
 import { routeCategory } from './bridge/category-router.js';
 import { runPipeline } from './pipeline/run-pipeline.js';
 import type { AgentRole, WorkCategory } from './types/index.js';
+import { contextInjectorHandler } from './hooks/context-injector.js';
+import { keywordDetectorHandler } from './hooks/keyword-detector.js';
+import { todoEnforcerHandler } from './hooks/todo-enforcer.js';
 
 interface OpenClawPluginApi {
   registerCommand(opts: {
@@ -55,6 +58,24 @@ async function getOmoc(): Promise<OmocPlugin> {
 function register(api: OpenClawPluginApi): void {
   if (api.runtime?.subagent) {
     bridge = new SubagentBridge(api as any);
+  }
+
+  // Register hooks
+  if ((api as any).registerHook) {
+    (api as any).registerHook(['agent:bootstrap'], (context: any) => {
+      contextInjectorHandler(context);
+    });
+
+    (api as any).registerHook(['message:received'], (context: any) => {
+      keywordDetectorHandler(context);
+    });
+
+    (api as any).registerHook(['tool_result_persist'], (context: any) => {
+      const directive = todoEnforcerHandler(context);
+      if (directive && context.metadata) {
+        context.metadata.omocDirective = directive;
+      }
+    });
   }
 
   api.registerCommand({
